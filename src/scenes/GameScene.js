@@ -1,51 +1,6 @@
 import Phaser from 'phaser'
 
-const playerIdleAssets = Object.fromEntries(
-    Object.entries(import.meta.glob('/assets/player/idle/*.png', { eager: true, import: 'default' }))
-        .map(([path, url]) => {
-            const match = path.match(/survivor-idle_shotgun_(\d+)\.png$/)
-            return match ? [match[1], url] : null
-        })
-        .filter(Boolean)
-)
-
-const playerMoveAssets = Object.fromEntries(
-    Object.entries(import.meta.glob('/assets/player/move/*.png', { eager: true, import: 'default' }))
-        .map(([path, url]) => {
-            const match = path.match(/survivor-move_shotgun_(\d+)\.png$/)
-            return match ? [match[1], url] : null
-        })
-        .filter(Boolean)
-)
-
-const enemyIdleAssets = Object.fromEntries(
-    Object.entries(import.meta.glob('/assets/enemies/skeleton/idle/*.png', { eager: true, import: 'default' }))
-        .map(([path, url]) => {
-            const match = path.match(/skeleton-idle_(\d+)\.png$/)
-            return match ? [match[1], url] : null
-        })
-        .filter(Boolean)
-)
-
-const enemyMoveAssets = Object.fromEntries(
-    Object.entries(import.meta.glob('/assets/enemies/skeleton/move/*.png', { eager: true, import: 'default' }))
-        .map(([path, url]) => {
-            const match = path.match(/skeleton-move_(\d+)\.png$/)
-            return match ? [match[1], url] : null
-        })
-        .filter(Boolean)
-)
-
-const bulletAsset = import.meta.glob('/assets/bullets/*.png', { eager: true, import: 'default' })['/assets/bullets/bullets.png']
-
-const audioAssets = Object.fromEntries(
-    Object.entries(import.meta.glob('/assets/audio/*.mp3', { eager: true, import: 'default' }))
-        .map(([path, url]) => {
-            const match = path.match(/\/([^/]+)\.mp3$/)
-            return match ? [match[1], url] : null
-        })
-        .filter(Boolean)
-)
+// CHANGED: Removed all import.meta.glob logic. Vite will copy the public/assets folder automatically, so we can load them directly.
 
 export default class GameScene extends Phaser.Scene {
     constructor() {
@@ -55,49 +10,34 @@ export default class GameScene extends Phaser.Scene {
     preload() {
         console.log('GameScene preload')
 
-        // PLAYER IDLE
+        // CHANGED: Replaced glob object lookups with standard Phaser template strings using relative paths.
         for (let i = 0; i <= 19; i++) {
-            const assetUrl = playerIdleAssets[String(i)]
-            if (assetUrl) {
-                this.load.image(`player_idle_${i}`, assetUrl)
-            }
+            this.load.image(`player_idle_${i}`, `assets/player/idle/survivor-idle_shotgun_${i}.png`)
         }
 
-        // PLAYER MOVE
+        // CHANGED: Applied relative paths.
         for (let i = 0; i <= 19; i++) {
-            const assetUrl = playerMoveAssets[String(i)]
-            if (assetUrl) {
-                this.load.image(`player_move_${i}`, assetUrl)
-            }
+            this.load.image(`player_move_${i}`, `assets/player/move/survivor-move_shotgun_${i}.png`)
         }
 
-        // ENEMY IDLE
+        // CHANGED: Applied relative paths.
         for (let i = 0; i <= 16; i++) {
-            const assetUrl = enemyIdleAssets[String(i)]
-            if (assetUrl) {
-                this.load.image(`enemy_idle_${i}`, assetUrl)
-            }
+            this.load.image(`enemy_idle_${i}`, `assets/enemies/skeleton/idle/skeleton-idle_${i}.png`)
         }
 
-        // ENEMY MOVE
+        // CHANGED: Applied relative paths.
         for (let i = 0; i <= 16; i++) {
-            const assetUrl = enemyMoveAssets[String(i)]
-            if (assetUrl) {
-                this.load.image(`enemy_move_${i}`, assetUrl)
-            }
+            this.load.image(`enemy_move_${i}`, `assets/enemies/skeleton/move/skeleton-move_${i}.png`)
         }
 
-        // BULLET
-        if (bulletAsset) {
-            this.load.image('bullet', bulletAsset)
-        }
+        // CHANGED: Loaded bullet image directly with a relative path.
+        this.load.image('bullet', 'assets/bullets/bullets.png')
 
-        // AUDIO
-        this.load.audio('snd_bgm', audioAssets.snd_bgm || '/assets/audio/snd_bgm.mp3')
-        this.load.audio('snd_enemyDeath', audioAssets.snd_enemyDeath || '/assets/audio/snd_enemyDeath.mp3')
-        this.load.audio('snd_gun', audioAssets.snd_gun || '/assets/audio/snd_gun.mp3')
+        // CHANGED: Removed fallback variables and leading slashes.
+        this.load.audio('snd_bgm', 'assets/audio/snd_bgm.mp3')
+        this.load.audio('snd_enemyDeath', 'assets/audio/snd_enemyDeath.mp3')
+        this.load.audio('snd_gun', 'assets/audio/snd_gun.mp3')
 
-        // DEBUG
         this.load.on('loaderror', (file) => {
             console.log('FAILED:', file.src)
         })
@@ -106,7 +46,6 @@ export default class GameScene extends Phaser.Scene {
     create() {
         this.cameras.main.setBackgroundColor('#222222')
 
-        // AUDIO
         this.snd_bgm = null
         this.snd_enemyDeath = null
         this.snd_gun = null
@@ -145,7 +84,6 @@ export default class GameScene extends Phaser.Scene {
             console.warn('Unable to add gun sound', error)
         }
 
-        // PLAYER
         this.player = this.physics.add.sprite(
             512,
             384,
@@ -160,11 +98,9 @@ export default class GameScene extends Phaser.Scene {
             this.player.height * 0.5
         )
 
-        // PLAYER STATS
         this.playerHP = 100
         this.canTakeDamage = true
 
-        // INPUT
         this.keys = this.input.keyboard.addKeys({
             up: Phaser.Input.Keyboard.KeyCodes.W,
             down: Phaser.Input.Keyboard.KeyCodes.S,
@@ -172,16 +108,13 @@ export default class GameScene extends Phaser.Scene {
             right: Phaser.Input.Keyboard.KeyCodes.D
         })
 
-        // GROUPS
         this.bullets = this.physics.add.group()
         this.enemies = this.physics.add.group()
         this.physics.add.collider(
-        this.enemies,
-        this.enemies
+            this.enemies,
+            this.enemies
         )
         
-
-        // PARTICLES
         this.enemyParticles = this.add.particles(0, 0, 'bullet', {
             speed: { min: 50, max: 200 },
             scale: { start: 0.03, end: 0 },
@@ -190,15 +123,12 @@ export default class GameScene extends Phaser.Scene {
             emitting: false
         })
 
-        // SCORE
         this.score = 0
 
-        // DIFFICULTY
         this.enemySpawnDelay = 2000
         this.enemySpeed = 100
         this.maxEnemySpeed = 300
 
-        // UI
         this.scoreText = this.add.text(20, 20, 'Score: 0', {
             fontSize: '24px',
             color: '#ffffff'
@@ -209,7 +139,6 @@ export default class GameScene extends Phaser.Scene {
             color: '#ff4444'
         })
 
-        // COLLISIONS
         this.physics.add.overlap(
             this.bullets,
             this.enemies,
@@ -226,12 +155,10 @@ export default class GameScene extends Phaser.Scene {
             this
         )
 
-        // SHOOT INPUT
         this.input.on('pointerdown', (pointer) => {
             this.shoot(pointer)
         })
 
-        // PLAYER IDLE ANIM
         if (!this.anims.exists('player_idle')) {
             this.anims.create({
                 key: 'player_idle',
@@ -243,7 +170,6 @@ export default class GameScene extends Phaser.Scene {
             })
         }
 
-        // PLAYER MOVE ANIM
         if (!this.anims.exists('player_move')) {
             this.anims.create({
                 key: 'player_move',
@@ -255,7 +181,6 @@ export default class GameScene extends Phaser.Scene {
             })
         }
 
-        // ENEMY MOVE ANIM
         if (!this.anims.exists('enemy_move')) {
             this.anims.create({
                 key: 'enemy_move',
@@ -269,7 +194,6 @@ export default class GameScene extends Phaser.Scene {
 
         this.player.play('player_idle')
 
-        // SPAWN LOOP
         this.spawnTimer = this.time.addEvent({
             delay: this.enemySpawnDelay,
             callback: this.spawnEnemy,
@@ -283,7 +207,6 @@ export default class GameScene extends Phaser.Scene {
 
         this.player.setVelocity(0)
 
-        // MOVEMENT
         if (this.keys.left.isDown) {
             this.player.setVelocityX(-200)
             isMoving = true
@@ -304,7 +227,6 @@ export default class GameScene extends Phaser.Scene {
             isMoving = true
         }
 
-        // ANIMATION
         if (isMoving) {
             if (this.player.anims.currentAnim?.key !== 'player_move') {
                 this.player.play('player_move')
@@ -315,7 +237,6 @@ export default class GameScene extends Phaser.Scene {
             }
         }
 
-        // AIM
         const pointer = this.input.activePointer
 
         const angle = Phaser.Math.Angle.Between(
@@ -327,7 +248,6 @@ export default class GameScene extends Phaser.Scene {
 
         this.player.setRotation(angle)
 
-        // ENEMY CHASE
         this.enemies.getChildren().forEach((enemy) => {
             const chaseAngle = Phaser.Math.Angle.Between(
                 enemy.x,
@@ -379,7 +299,6 @@ export default class GameScene extends Phaser.Scene {
 
     spawnEnemy() {
         const side = Phaser.Math.Between(0, 3)
-
         let x, y
 
         if (side === 0) {
@@ -418,7 +337,6 @@ export default class GameScene extends Phaser.Scene {
         this.score += 1
         this.scoreText.setText('Score: ' + this.score)
 
-        // DIFFICULTY SCALE
         if (this.score % 5 === 0) {
             if (this.enemySpeed < this.maxEnemySpeed) {
                 this.enemySpeed += 20
@@ -453,13 +371,10 @@ export default class GameScene extends Phaser.Scene {
 
         if (this.playerHP <= 0) {
             const finalScore = this.score
-
             this.snd_bgm.stop()
-
             this.scene.stop('GameScene')
 
             const highScore = localStorage.getItem('highScore') || 0
-
             if (finalScore > highScore) {
                 localStorage.setItem('highScore', finalScore)
             }
@@ -467,7 +382,7 @@ export default class GameScene extends Phaser.Scene {
             this.scene.start('GameOverScene', {
                 score: finalScore,
                 highScore: localStorage.getItem('highScore')
-})
+            })
         }
     }
 }
